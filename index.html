@@ -97,4 +97,20 @@
         </div>
     </div>
 </body>
+<script>
+	// Get the base directory for the project
+	var basePath = "hw-webpages-stephen_webpage"; 
+
+	// Update all image paths
+	var images = document.querySelectorAll('img');
+	images.forEach(function(img) {
+		img.src = basePath + '/' + img.src;
+	});
+
+	// Update all anchor tag hrefs
+	var links = document.querySelectorAll('a');
+	links.forEach(function(link) {
+		link.href = basePath + '/' + link.getAttribute('href');
+	});
+</script>
 </html>
