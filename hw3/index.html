@@ -28,12 +28,13 @@
 	<body>
 		<div class="container">
 		<h1>CS184/284A Spring 2025 Homework 3 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Name: Stephen Lee </div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-stephen_webpage/hw3/index.html">https://cal-cs184-student.github.io/hw-webpages-stephen_webpage/hw3/index.html</a>
+
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/sp25-hw3-stephen_hw3">https://github.com/cal-cs184-student/sp25-hw3-stephen_hw3</a>
 		
 		<figure>
 			<img src="cornell.png" alt="Cornell Boxes with Bunnies" style="width:70%"/>
@@ -45,62 +46,378 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		In this homework, we implemented a path tracer to render scenes with realistic, physically accurate lighting. This computation is very expensive, so we implemented methods like BVH and adaptive sampling to speed up our rendering. We tried various sampling methods and implemented global illumination to better capture lighting details.
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>
+			At a high level, a path tracer generates traces rays from the camera into the scene and determines which objects they intersect. Ray generation begins in the image space where we generate some number of rays for each pixel. We can then transform this location in the image space to the camera space, compute the direction, and finally transform the ray to world space.
+		</p>
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		<p>
+			Now that we have generated valid rays, we want to see how this ray interacts with the objects in the scene. To figure out if a ray has hit something as it traverses, we loop through all scene objects and test for intersection. We'll walk through how this works for traingles as an example. For triangles, we can use the Moller-Trumbore algorithm. In this algorithm, after we calculate the edges and points of the triagnel shifted in barycentric coordinates, we can compute the parameters t, b1, and b2. Now, as long as t >= 0, 0 <= b1, 0 <= b2 <= 1, 0 <= 1 - b1 - b2 <= 1, all hold true, there is a valid intersection. When a ray intersects any object, like the triangles we just described for example, we save some data such as normal and BSDF that we can use to determine what color this intersection contributed to the pixel. Now we can render some simple scenes with normal shading.
+		</p>
+
+
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="CBempty.png" width="400px"/>
+				  <figcaption>Empty cornell box scene</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="CBspheres_normal.png" width="400px"/>
+				  <figcaption>Cornell box scene with 2 spheres</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+					<img src="CBcoil_normal.png" width="400px"/>
+					<figcaption>Cornell box scene with a coil</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
 		
 		<h2>Part 2: Bounding Volume Hierarchy</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>
+			In this next section, we implemented a bounding volume hierarchy (BVH) to help accelerate the computation of intersections compared to naively checking all the primitives for intersection. We construct our BVH by starting with a minimum bounding box that contains all the primitives. We then check to see if the number of primitives in the scene is less than or equal to a max_leaf_size parameter, in which case the node is complete and we are done constructing. If this is not the case, we split the bounding box by choosing the axis with the greatest range of values and splitting on the centroid of the primitives. We recursively call this on the resulting 2 halves until completion.
+		</p>
+		
+		<p>
+			With BVH now implemented complex scenes with a lot of primitives could now be rendered in a reasonable amount of time. As recommended, Maxplanck which has on the order of 10,000 triangles saw a ~270x speed-up and CBlucy which has on the order of 100,000 triangles saw ~590x speed-up. This demonstrates that the BVH implementation scales better as the scenes get more complex. Here's some data to demonstrate this:
+		</p>
+		
+
+		<p>
+			Cow.dae: ~32s -> ~0.4s
+			Maxplanck.dae: ~387s -> ~1.4s
+			CBlucy.dae: ~1475s -> ~2.5s
+		</p>
+		
+
+		<p>
+			Here's what the Maxplanck and CBLucy scenes look like:
+		</p>
+		
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="planck.png" width="400px"/>
+				  <figcaption>Maxplanck scene</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="CBlucy.png" width="400px"/>
+				  <figcaption>CBlucy scene</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h2>Part 3: Direct Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>
+			In this section we implement direct illumination, meaning light rays with 0 bounces (coming directly from a light source to the camera) and 1 bounce (light that bounces off a primitive in the scene directly into the camera). We implemented this in 2 ways: uniform hemisphere sampling and importance sampling. For uniform hemisphere sampling, when a ray intersects a primitive at some point in our scene, we take some number of samples uniformly around the hemisphere above the point to see if it intersects a light source. If one of these samples hit a light sources, it contributes to the ray hit. This method can produce very noisy, grainy renders without enough samples, because you might not hit a light source even if it's possible. This leads into importance sampling, the second method we implemented here. For importance sampling, we leverage the fact that we know where all the lights in the scene are, and only sample in that direction with shadow rays. If the shadow ray manages to hit the light, it contributes, and if it hits some other object in the scene first, it does not contribute. This greatly improves the visual quality of our renders without having to crank up our sampling parameters to unreasonable levels.
+		</p>
+		
+
+		<p>
+			Here's a comparison of these two methods side-by-side with a wide range of sampling parameters. We have uniform hemisphere sampling on the top, and the analogous iportance sampling render on the bottom.
+		</p>
+		
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_H_1_1_final.png" width="400px"/>
+				  <figcaption>bunny -s 1 -l 1 -H</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_H_4_4_final.png" width="400px"/>
+					<figcaption>bunny -s 4 -l 4 -H</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_H_16_16_final.png" width="400px"/>
+					<figcaption>bunny -s 16 -l 16 -H</figcaption>
+				</td>
+				<td style="text-align: center;">
+				<img src="bunny_H_64_64_final.png" width="400px"/>
+				<figcaption>bunny -s 64 -l 64 -H</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_1_1_final.png" width="400px"/>
+				  <figcaption>bunny -s 1 -l 1</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_4_4_final.png" width="400px"/>
+					<figcaption>bunny -s 4 -l 4</figcaption>
+				</td>
+					<td style="text-align: center;">
+					<img src="bunny_16_16_final.png" width="400px"/>
+					<figcaption>bunny -s 16 -l 16</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_64_64_final.png" width="400px"/>
+					<figcaption>bunny -s 64 -l 64</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			Here's the spheres scene with varying numbers of light rays, while keeping the number of samples we take constant. If we look at the soft shadows, we can see that increasing the number of light rays dramatically decreases the amount of noise, even when we are using importance sampling.
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="sphere_1_1_final.png" width="400px"/>
+				  <figcaption>sphere -s 1 -l 1</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="sphere_1_4_final.png" width="400px"/>
+					<figcaption>sphere -s 1 -l 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="sphere_1_16_final.png" width="400px"/>
+					<figcaption>sphere -s 1 -l 16</figcaption>
+				  </td>
+				  <td style="text-align: center;">
+					  <img src="sphere_1_64_final.png" width="400px"/>
+					  <figcaption>sphere -s 1 -l 64</figcaption>
+				  </td>
+			  </tr>
+			</table>
+		</div>
 
 		<h2>Part 4: Global Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>
+			In this section we implement global illumination to enable more rich visual qualities in our scenes. To do this we need to account for indirect lighting, where we are now integrating the 2nd, and the 3rd, and the 4th, etc. bounces that the light takes. We do this by recursively calling <code>at_least_one_bounce_radiance</code> to accumulate light as it does these successive bounces throughout the scene. We pass in a <code>max_ray_depth</code> parameter, that we decrement throughout this recursion until we reach a base case of the final bounce that's allowed. When we combine this with the 0 bounce case from the previous section, we get our final global illumination results. Here's a couple of scenes that we've rendered with global illumination enabled:
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="spheres_1024_8_final.png" width="400px"/>
+				  <figcaption>sphere -s 1024 -l 8 -m 5</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bench_1024_8_final.png" width="400px"/>
+					<figcaption>bench -s 1024 -l 8 -m 5</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			Here's a decompisition of the sphere scene with only the direct lighting on the left and only the indirect lighting on the right:
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="spheres_1024_1_direct_final.png" width="400px"/>
+				  <figcaption>sphere -s 1024 -l 1 -m 1</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="spheres_1024_1_indirect_final.png" width="400px"/>
+					<figcaption>bench -s 1024 -l 1 -m 5 (as mentioned in the spec, code was modified to get this render)</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			Now let's look at the bunny scene. We have functionality to not accumulate the light as it bounces. That is when this feature is enabled, we only render the light returned by the last bounce. Below we show this for varying maximum numbers of bounces.
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_m0_false.png" width="400px"/>
+				  <figcaption>bunny -s 1024 -l 1 -m 0 -o 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m1_false.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 1 -o 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m2_false.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 2 -o 0</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_m3_false.png" width="400px"/>
+				  <figcaption>bunny -s 1024 -l 1 -m 3 -o 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m4_false.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 4 -o 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m5_false.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 5 -o 0</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			Here's what this looks like if we were to accumulate the bounces instead:
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_m0_true.png" width="400px"/>
+				  <figcaption>bunny -s 1024 -l 1 -m 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m1_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 1</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m2_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 2</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_m3_true.png" width="400px"/>
+				  <figcaption>bunny -s 1024 -l 1 -m 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m4_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m5_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 5</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			If we take a look particularly at the 2nd and 3rd bounces, we can see that the 2nd bounce enables for lighting on the underside of objects such as the underside of the bunny and the ceiling in the scene. With the 3rd bounce we can start to see more smooth color bleeding. When compared to traditional rendering methods like rasterization, we can capture these realistic, physical effects in our final render in a way that rasterization does not capture.
+		</p>
+
+		<p>
+			We also implemented russian roulette to get an unbiased method for reducing computation time. Our renders after implementing this are shown below. We can see that the visual quality is pretty much the same, but we can now handle much larger numbers of bounces like the 100 bounce case we show without having ridiculously long render times.
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_m0_true.png" width="400px"/>
+				  <figcaption>bunny -s 1024 -l 1 -m 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m1_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 1</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m2_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 2</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_m3_true.png" width="400px"/>
+				  <figcaption>bunny -s 1024 -l 1 -m 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m4_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_m100_true.png" width="400px"/>
+					<figcaption>bunny -s 1024 -l 1 -m 100</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>
+			Finally let's look at the wall-e scene with varying sample-per-pixel rates:
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="walle_1_4.png" width="400px"/>
+				  <figcaption>wall-e -s 1 -l 4 -m 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="walle_2_4.png" width="400px"/>
+					<figcaption>wall-e -s 2 -l 4 -m 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="walle_4_4.png" width="400px"/>
+					<figcaption>wall-e -s 4 -l 4 -m 3</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="walle_8_4.png" width="400px"/>
+				  <figcaption>wall-e -s 8 -l 4 -m 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="walle_16_4.png" width="400px"/>
+					<figcaption>wall-e -s 16 -l 4 -m 3</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="walle_64_4.png" width="400px"/>
+					<figcaption>wall-e -s 64 -l 4 -m 3</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="walle_1024_4.png" width="400px"/>
+				  <figcaption>wall-e -s 1024 -l 4 -m 3</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
 
 		<h2>Part 5: Adaptive Sampling</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		The final feature that we implemented here was adaptive sampling. This is a simple method for speeding up our renders by tracking how much a pixel value is changing from the additional sample. Once the pixel isn't really changing that much, that means that it's converged to the value that we want, and it's safe to stop sampling. We create a confidence interval such that we are 95% certain that the pixel is done. If the pixel is done, we simply break out of our sampling loop and stop sampling for that pixel. Here's a couple of scenes with a heat map of each pixel's needed sampling rate and the actual render that was made:
 
-		<h2>(Optional) Part 6: Extra Credit Opportunities</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="bunny_russian.png" width="400px"/>
+				  <figcaption>bunny -s 2048 -l 1 -m 5 -a 64 0.05</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="bunny_russian_rate.png" width="400px"/>
+					<figcaption>bunny -s 2 -l 1 -m 5 -a 64 0.05</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="wall-e_2048_1.png" width="400px"/>
+				  <figcaption>wall-e -s 2048 -l 1 -m 5 -a 64 0.05</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="wall-e_2048_1_rate.png" width="400px"/>
+					<figcaption>wall-e -s 2048 -l 1 -m 5 -a 64 0.05</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
 		</div>
 	</body>
 </html>
