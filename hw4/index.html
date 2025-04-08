@@ -40,7 +40,6 @@
 
 		<figure>
 			<img src="clothsim.png" alt="Cloth draped over sphere" style="width:70%"/>
-			<figcaption>You can add images with captions!</figcaption>
 		</figure>
 
 		<!--
@@ -318,25 +317,71 @@
 		</p>
 
 		<p>
-			One example of a shader that we can implement is Blinn-Phong shading. Blinn-Phong shading consists of three components of light: ambient, diffuse, and specular. The ambient component accounts for the base lighting of the scene
-
-			Blinn-Phong shading consists of three components: Ambient, diffuse, and specular. Ambient shading is a constant color applied over the 3D object, representing the base lighting that does not depend on any external light sources. Diffuse reflection represents the light that is equally distributed in all directions, it applies the same surface color on the 3D object from any direction. This is determined by Lambert's cosine law. Specular shading shines on the 3D object based on the viewing direction, where it becomes brighter as the object faces the mirror's direction. This is measured by the dot product of the normal vector and the half vector between the light's and object's directions. Adding these three components will give Blinn-Phong shading.
+			One example of a shader that we can implement is Blinn-Phong shading. Blinn-Phong shading consists of three components of light: ambient, diffuse, and specular. The ambient component accounts for the base lighting of the scene, the diffuse component represents one-bounce light that is scattered in all directions, and the specular component represents mirror-like, reflective behavior. We can simply sum these three components to get Blinn-Phong shading. Here's what this looks like:
 		</p>
-		
 
-		<h2>(Optional) Part 6: Extra Credit - Additional cloth simulation features!</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
+		<figure>
+			<img src="p5_phong.png" width="400px"/>
+			<figcaption>Blinn-Phong shading</figcaption>
+		</figure>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+				<td style="text-align: center;">
+					<img src="p5_ambient.png" width="400px"/>
+					<figcaption>ambient component</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="p5_diffuse.png" width="400px"/>
+					<figcaption>diffuse component</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="p5_specular.png" width="400px"/>
+					<figcaption>specular component</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<figure>
+			<img src="p5_texture.png" width="400px"/>
+			<figcaption>texture shader</figcaption>
+		</figure>
+
+		<p>
+			We implement bump mapping and displacement mapping shaders as well. Bump making creates the illusion of rough surface detials by adjusting lighting normals, while the actual mesh geometry remains the same. Displacement mapping physically alters the mesh geometry based on the texture to create these rough surface details. We can see that they achieve similar effects. Note that displacement mapping needs a high-resolution mesh to look good though it can create more realistic surface roughness than bump mapping can, we can see this below as we increase the resolution from 16 to 128 in the images below:
+		</p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			<tr>
+				<td style="text-align: center;">
+					<img src="p5_bump_16.png" width="400px"/>
+					<figcaption>bump mapping -a 16 -o 16</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="p5_displacement_16.png" width="400px"/>
+					<figcaption>displacement mapping -a 16 -o 16</figcaption>
+				</td>
+			  </tr>
+
+			  <tr>
+				<td style="text-align: center;">
+					<img src="p5_bump_128.png" width="400px"/>
+					<figcaption>bump mapping -a 128 -o 128</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="p5_displacement_128.png" width="400px"/>
+					<figcaption>displacement mapping -a 128 -o 128t</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<figure>
+			<img src="p5_mirror.png" width="400px"/>
+			<figcaption>mirror shader</figcaption>
+		</figure>
 		</div>
 	</body>
 </html>
